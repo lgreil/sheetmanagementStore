@@ -98,7 +98,7 @@ export class StueckeService {
         // Clean up join table entries first
         await this.prisma.komponiert.deleteMany({ where: { stid: id } });
         await this.prisma.arrangiert.deleteMany({ where: { stid: id } });
-        return this.prisma.stueck.delete({ where: { stid: id } });
+        return this.prisma.stuecke.delete({ where: { stid: id } });
     }
 
     // Helper method to transform the returned data into the desired format.
