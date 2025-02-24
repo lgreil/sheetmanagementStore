@@ -104,7 +104,7 @@ export class StueckeService {
     // Helper method to transform the returned data into the desired format.
     private formatStuecke(stuecke: any) {
         return {
-            id: stuecke.stid,
+            stid: stuecke.stid,
             name: stuecke.name,
             genre: stuecke.genre,
             jahr: stuecke.jahr,
