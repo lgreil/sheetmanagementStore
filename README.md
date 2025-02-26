@@ -100,4 +100,4 @@ This project is licensed under the MIT License - see the `LICENSE` file for deta
 
 ## Contact
 
-For questions or suggestions, please contact [your-email@example.com].
+Comming soon
