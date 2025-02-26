@@ -10,18 +10,23 @@ datasource db {
 model arrangiert {
   pid    Int
   stid   Int
-  aid    Int    @id @default(autoincrement())
-  person person @relation(fields: [pid], references: [pid], onDelete: NoAction, onUpdate: NoAction)
-  stuecke stuecke @relation(fields: [stid], references: [stid], onDelete: NoAction, onUpdate: NoAction, map: "arrangiert_prid_fkey")
+  person person @relation(fields: [pid], references: [pid], onDelete: Cascade, onUpdate: Cascade)
+  stuecke stuecke @relation(fields: [stid], references: [stid], onDelete: Cascade, onUpdate: Cascade, map: "arrangiert_prid_fkey")
+
+  @@id([stid, pid])
 }
 
 model komponiert {
   pid    Int
   stid   Int
-  kid    Int    @id @default(autoincrement())
-  person person @relation(fields: [pid], references: [pid], onDelete: NoAction, onUpdate: NoAction)
-  stuecke stuecke @relation(fields: [stid], references: [stid], onDelete: NoAction, onUpdate: NoAction)
+  person person @relation(fields: [pid], references: [pid], onDelete: Cascade, onUpdate: Cascade)
+  stuecke stuecke @relation(fields: [stid], references: [stid], onDelete: Cascade, onUpdate: Cascade)
+
+  @@id([stid, pid])
 }
+
+
+
 
 model person {
   pid        Int          @id @default(autoincrement())
@@ -29,6 +34,8 @@ model person {
   name       String?      @db.VarChar(255)
   arrangiert arrangiert[]
   komponiert komponiert[]
+
+  @@unique([name, vorname], name: "name_vorname_unique") // Ensure this exists
 }
 
 model programm {
@@ -56,7 +63,6 @@ model stuecke {
 
    @@map("stueck") // This tells Prisma that the table in PostgreSQL is named "Stueck"
 }
-
 
 model user {
   uid           Int       @id @default(autoincrement())
