@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePersonenDto } from './dto/create-personen.dto';
 import { UpdatePersonenDto } from './dto/update-personen.dto';
@@ -27,11 +27,15 @@ export class PersonenService {
     @ApiOperation({ summary: 'Get a person by ID' })
     @ApiResponse({ status: 200, description: 'Return the person.' })
     @ApiResponse({ status: 404, description: 'Person not found.' })
-    findOne(pid: number) {
-        return this.prisma.person.findUnique({
-            where: { pid },
-        });
+    async findOne(id: number) {
+        const person = await this.prisma.person.findUnique({ where: { pid: id } });
+        if (!person) {
+            throw new NotFoundException(`Person with ID ${id} not found`);
+        }
+        return person;
     }
+
+
 
     @ApiOperation({ summary: 'Update a person by ID' })
     @ApiResponse({ status: 200, description: 'The person has been successfully updated.' })

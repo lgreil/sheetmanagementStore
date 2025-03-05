@@ -13,20 +13,18 @@ export class StueckeService {
     @ApiResponse({ status: 201, description: 'The Stück has been successfully created.' })
     @ApiResponse({ status: 400, description: 'Bad Request.' })
     async create(createStueckeDto: CreateStueckeDto) {
-        const { composerIds, arrangerIds, composerNames, arrangerNames, ...data } = createStueckeDto;
+        const { composerIds = [], arrangerIds = [], ...data } = createStueckeDto;
 
-        // Resolve composer and arranger relations
-        const komponiertData = await this.resolvePersons(composerIds, composerNames);
-        const arrangiertData = await this.resolvePersons(arrangerIds, arrangerNames);
 
         const stuecke = await this.prisma.stuecke.create({
             data: {
                 ...data,
                 komponiert: {
-                    create: komponiertData.map(pid => ({ person: { connect: { pid } } })),
+                    create: composerIds.map(pid => ({ person: { connect: { pid } } })),
                 },
                 arrangiert: {
-                    create: arrangiertData.map(pid => ({ person: { connect: { pid } } })),
+                    create: arrangerIds.map(pid => ({ person: { connect: { pid } } })),
+
                 },
             },
             include: {
@@ -71,29 +69,26 @@ export class StueckeService {
     @ApiResponse({ status: 200, description: 'The Stück has been successfully updated.' })
     @ApiResponse({ status: 404, description: 'Stück not found.' })
     async update(id: number, updateStueckeDto: UpdateStueckeDto) {
-        const { composerIds, arrangerIds, composerNames, arrangerNames, ...data } = updateStueckeDto;
 
-        // Ensure the Stück exists
+        const { composerIds = [], arrangerIds = [], ...data } = updateStueckeDto;
+
         const existing = await this.prisma.stuecke.findUnique({ where: { stid: id } });
-        if (!existing) throw new NotFoundException(`Stück with id ${id} not found`);
+        if (!existing) {
+            throw new NotFoundException(`Stück with id ${id} not found`);
+        }
 
-        // Resolve composer and arranger relations
-        const komponiertData = await this.resolvePersons(composerIds, composerNames);
-        const arrangiertData = await this.resolvePersons(arrangerIds, arrangerNames);
-
-        // Remove existing relations and update
         await this.prisma.komponiert.deleteMany({ where: { stid: id } });
         await this.prisma.arrangiert.deleteMany({ where: { stid: id } });
-
         const updatedStuecke = await this.prisma.stuecke.update({
             where: { stid: id },
             data: {
                 ...data,
                 komponiert: {
-                    create: komponiertData.map(pid => ({ person: { connect: { pid } } })),
+                    create: composerIds.map(pid => ({ person: { connect: { pid } } })),
                 },
                 arrangiert: {
-                    create: arrangiertData.map(pid => ({ person: { connect: { pid } } })),
+                    create: arrangerIds.map(pid => ({ person: { connect: { pid } } })),
+
                 },
             },
             include: {
@@ -109,43 +104,15 @@ export class StueckeService {
     @ApiResponse({ status: 200, description: 'The Stück has been successfully deleted.' })
     @ApiResponse({ status: 404, description: 'Stück not found.' })
     async remove(id: number) {
-        // Clean up join table entries first
         await this.prisma.komponiert.deleteMany({ where: { stid: id } });
         await this.prisma.arrangiert.deleteMany({ where: { stid: id } });
 
         return this.prisma.stuecke.delete({ where: { stid: id } });
     }
-
-    // Helper function to resolve persons from IDs or names
-    private async resolvePersons(ids?: number[], names?: string[]): Promise<number[]> {
-        let personIds: number[] = [];
-
-        if (ids) {
-            personIds.push(...ids);
-        }
-
-        if (names) {
-            const createdOrFoundPersons = await Promise.all(
-                names.map(async fullName => {
-                    const [vorname, ...rest] = fullName.split(' ');
-                    const name = rest.join(' ');
-
-                    const person = await this.prisma.person.upsert({
-                        where: { name_vorname_unique: { name, vorname } },
+     where: { name_vorname_unique: { name, vorname } },
                         update: {},
                         create: { name, vorname },
-                    });
 
-                    return person.pid;
-                })
-            );
-            personIds.push(...createdOrFoundPersons);
-        }
-
-        return personIds;
-    }
-
-    // Helper method to transform the returned data into the desired format.
     private formatStuecke(stuecke: any) {
         return {
             stid: stuecke.stid,
@@ -154,12 +121,9 @@ export class StueckeService {
             jahr: stuecke.jahr,
             schwierigkeit: stuecke.schwierigkeit,
             isdigitalisiert: stuecke.isdigitalisiert,
-            composer_names: stuecke.komponiert?.map(
-                k => `${k.person.vorname || ''} ${k.person.name || ''}`.trim(),
-            ),
-            arranger_names: stuecke.arrangiert?.map(
-                a => `${a.person.vorname || ''} ${a.person.name || ''}`.trim(),
-            ),
+            composer_ids: stuecke.komponiert?.map(k => k.person.pid),
+            arranger_ids: stuecke.arrangiert?.map(a => a.person.pid),
+
         };
     }
 }
