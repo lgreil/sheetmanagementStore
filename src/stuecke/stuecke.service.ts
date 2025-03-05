@@ -15,6 +15,7 @@ export class StueckeService {
     async create(createStueckeDto: CreateStueckeDto) {
         const { composerIds = [], arrangerIds = [], ...data } = createStueckeDto;
 
+
         const stuecke = await this.prisma.stuecke.create({
             data: {
                 ...data,
@@ -23,6 +24,7 @@ export class StueckeService {
                 },
                 arrangiert: {
                     create: arrangerIds.map(pid => ({ person: { connect: { pid } } })),
+
                 },
             },
             include: {
@@ -67,6 +69,7 @@ export class StueckeService {
     @ApiResponse({ status: 200, description: 'The Stück has been successfully updated.' })
     @ApiResponse({ status: 404, description: 'Stück not found.' })
     async update(id: number, updateStueckeDto: UpdateStueckeDto) {
+
         const { composerIds = [], arrangerIds = [], ...data } = updateStueckeDto;
 
         const existing = await this.prisma.stuecke.findUnique({ where: { stid: id } });
@@ -76,7 +79,6 @@ export class StueckeService {
 
         await this.prisma.komponiert.deleteMany({ where: { stid: id } });
         await this.prisma.arrangiert.deleteMany({ where: { stid: id } });
-
         const updatedStuecke = await this.prisma.stuecke.update({
             where: { stid: id },
             data: {
@@ -86,6 +88,7 @@ export class StueckeService {
                 },
                 arrangiert: {
                     create: arrangerIds.map(pid => ({ person: { connect: { pid } } })),
+
                 },
             },
             include: {
@@ -106,6 +109,9 @@ export class StueckeService {
 
         return this.prisma.stuecke.delete({ where: { stid: id } });
     }
+     where: { name_vorname_unique: { name, vorname } },
+                        update: {},
+                        create: { name, vorname },
 
     private formatStuecke(stuecke: any) {
         return {
@@ -117,6 +123,7 @@ export class StueckeService {
             isdigitalisiert: stuecke.isdigitalisiert,
             composer_ids: stuecke.komponiert?.map(k => k.person.pid),
             arranger_ids: stuecke.arrangiert?.map(a => a.person.pid),
+
         };
     }
 }

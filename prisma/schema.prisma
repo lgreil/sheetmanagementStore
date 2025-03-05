@@ -19,23 +19,20 @@ model arrangiert {
 model komponiert {
   pid    Int
   stid   Int
+
   person person @relation(fields: [pid], references: [pid], onDelete: Cascade, onUpdate: Cascade)
   stuecke stuecke @relation(fields: [stid], references: [stid], onDelete: Cascade, onUpdate: Cascade)
 
   @@id([stid, pid])
 }
-
-
-
-
 model person {
   pid        Int          @id @default(autoincrement())
   vorname    String?      @db.VarChar(255)
   name       String?      @db.VarChar(255)
   arrangiert arrangiert[]
   komponiert komponiert[]
-
   @@unique([name, vorname], name: "name_vorname_unique") // Ensure this exists
+
 }
 
 model programm {

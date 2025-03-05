@@ -36,6 +36,7 @@ export class PersonenService {
     }
 
 
+
     @ApiOperation({ summary: 'Update a person by ID' })
     @ApiResponse({ status: 200, description: 'The person has been successfully updated.' })
     @ApiResponse({ status: 404, description: 'Person not found.' })
