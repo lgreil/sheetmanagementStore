@@ -6,7 +6,7 @@ import { ApiTags } from '@nestjs/swagger';
 
 @ApiTags('stuecke')
 @Controller('stuecke')
-export class StueckeController {
+export class AppController {
   constructor(private readonly stueckeService: StueckeService) { }
 
   @Post()
