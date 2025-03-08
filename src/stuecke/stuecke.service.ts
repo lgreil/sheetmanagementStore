@@ -13,23 +13,16 @@ export class StueckeService {
     @ApiResponse({ status: 201, description: 'The Stück has been successfully created.' })
     @ApiResponse({ status: 400, description: 'Bad Request.' })
     async create(createStueckeDto: CreateStueckeDto) {
-        const { composerIds = [], arrangerIds = [], ...data } = createStueckeDto;
-
+        // To be implemented: Logic for handling composers and arrangers
+        const { ...data } = createStueckeDto;
 
         const stuecke = await this.prisma.stuecke.create({
             data: {
                 ...data,
-                komponiert: {
-                    create: composerIds.map(pid => ({ person: { connect: { pid } } })),
-                },
-                arrangiert: {
-                    create: arrangerIds.map(pid => ({ person: { connect: { pid } } })),
-
-                },
+                // To be implemented: Logic for handling composers and arrangers
             },
             include: {
-                komponiert: { include: { person: true } },
-                arrangiert: { include: { person: true } },
+                // To be implemented: Logic for including composers and arrangers
             },
         });
 
@@ -41,8 +34,7 @@ export class StueckeService {
     async findAll() {
         const stuecke = await this.prisma.stuecke.findMany({
             include: {
-                komponiert: { include: { person: true } },
-                arrangiert: { include: { person: true } },
+                // To be implemented: Logic for including composers and arrangers
             },
         });
         return stuecke.map(st => this.formatStuecke(st));
@@ -55,8 +47,7 @@ export class StueckeService {
         const stuecke = await this.prisma.stuecke.findUnique({
             where: { stid: id },
             include: {
-                komponiert: { include: { person: true } },
-                arrangiert: { include: { person: true } },
+                // To be implemented: Logic for including composers and arrangers
             },
         });
         if (!stuecke) {
@@ -69,31 +60,23 @@ export class StueckeService {
     @ApiResponse({ status: 200, description: 'The Stück has been successfully updated.' })
     @ApiResponse({ status: 404, description: 'Stück not found.' })
     async update(id: number, updateStueckeDto: UpdateStueckeDto) {
-
-        const { composerIds = [], arrangerIds = [], ...data } = updateStueckeDto;
+        // To be implemented: Logic for handling composers and arrangers
+        const { ...data } = updateStueckeDto;
 
         const existing = await this.prisma.stuecke.findUnique({ where: { stid: id } });
         if (!existing) {
             throw new NotFoundException(`Stück with id ${id} not found`);
         }
 
-        await this.prisma.komponiert.deleteMany({ where: { stid: id } });
-        await this.prisma.arrangiert.deleteMany({ where: { stid: id } });
+        // To be implemented: Logic for deleting and creating composers and arrangers
         const updatedStuecke = await this.prisma.stuecke.update({
             where: { stid: id },
             data: {
                 ...data,
-                komponiert: {
-                    create: composerIds.map(pid => ({ person: { connect: { pid } } })),
-                },
-                arrangiert: {
-                    create: arrangerIds.map(pid => ({ person: { connect: { pid } } })),
-
-                },
+                // To be implemented: Logic for handling composers and arrangers
             },
             include: {
-                komponiert: { include: { person: true } },
-                arrangiert: { include: { person: true } },
+                // To be implemented: Logic for including composers and arrangers
             },
         });
 
@@ -104,14 +87,10 @@ export class StueckeService {
     @ApiResponse({ status: 200, description: 'The Stück has been successfully deleted.' })
     @ApiResponse({ status: 404, description: 'Stück not found.' })
     async remove(id: number) {
-        await this.prisma.komponiert.deleteMany({ where: { stid: id } });
-        await this.prisma.arrangiert.deleteMany({ where: { stid: id } });
+        // To be implemented: Logic for deleting composers and arrangers
 
         return this.prisma.stuecke.delete({ where: { stid: id } });
     }
-     where: { name_vorname_unique: { name, vorname } },
-                        update: {},
-                        create: { name, vorname },
 
     private formatStuecke(stuecke: any) {
         return {
@@ -121,9 +100,7 @@ export class StueckeService {
             jahr: stuecke.jahr,
             schwierigkeit: stuecke.schwierigkeit,
             isdigitalisiert: stuecke.isdigitalisiert,
-            composer_ids: stuecke.komponiert?.map(k => k.person.pid),
-            arranger_ids: stuecke.arrangiert?.map(a => a.person.pid),
-
+            // To be implemented: Logic for formatting composers and arrangers
         };
     }
 }
