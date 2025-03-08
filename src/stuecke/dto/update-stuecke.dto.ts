@@ -26,23 +26,9 @@ export class UpdateStueckeDto extends PartialType(CreateStueckeDto) {
   composerIds?: number[];
 
   @ApiProperty({
-    description: 'Names of the composers',
-    required: false,
-    type: [String],
-  })
-  composerNames?: string[];
-
-  @ApiProperty({
     description: 'IDs of the arrangers',
     required: false,
     type: [Number],
   })
   arrangerIds?: number[];
-
-  @ApiProperty({
-    description: 'Names of the arrangers',
-    required: false,
-    type: [String],
-  })
-  arrangerNames?: string[];
 }

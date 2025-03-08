@@ -5,12 +5,8 @@ import {
   Injectable,
   NestInterceptor,
 } from '@nestjs/common';
-//This class is respnsible for resolving composer and arranger names and converting them to IDs whenever the api is called.
-//It should look up the composer and arranger names in the database and convert them to IDs.
-// If a composer or arranger name is not found in the database, it should create a new entry.
-// Then the ID should be replacing the name in the request body and the request should be sent to the correct api endpoint.
+import { Observable } from 'rxjs';
 import { PersonenService } from '../personen/personen.service';
-import { Observable } from 'rxjs/internal/Observable';
 
 @Injectable()
 export class ConvertNameIdInterceptor implements NestInterceptor {
@@ -23,20 +19,29 @@ export class ConvertNameIdInterceptor implements NestInterceptor {
     next: CallHandler,
   ): Promise<Observable<any>> {
     const request = context.switchToHttp().getRequest();
-    const composerNames: string[] = request.body.composer;
-    const arrangerNames: string[] = request.body.arranger;
+    const composerNames: string[] = request.body.composer || [];
+    const arrangerNames: string[] = request.body.arranger || [];
 
+    // Ensure both composer and arranger are arrays (to prevent errors)
+    if (!Array.isArray(composerNames) || !Array.isArray(arrangerNames)) {
+      throw new Error('Both composer and arranger should be arrays');
+    }
+
+    // Convert composer names to IDs
     const composerIds = await Promise.all(
       composerNames.map((name: string) =>
         this.personService.findOrCreatePerson(name, 'composer'),
       ),
     );
+
+    // Convert arranger names to IDs
     const arrangerIds = await Promise.all(
       arrangerNames.map((name: string) =>
         this.personService.findOrCreatePerson(name, 'arranger'),
       ),
     );
 
+    // Replace names with IDs in the request body
     request.body.composer = composerIds;
     request.body.arranger = arrangerIds;
 

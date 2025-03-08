@@ -9,10 +9,16 @@ STUECKE_URL = f"{BASE_URL}/stuecke"
 
 # Caches to avoid redundant API calls.
 person_cache = {}    # key: "vorname name" string, value: person id (pid)
-stuecke_cache = {}   # key: stück name, value: stück id (stid)
+stuecke_cache = {}   # key: stück name (normalized), value: stück id (stid)
 
 # List to collect our API responses and payloads for output.
 results = []
+
+def normalize_name(name):
+    """
+    Normalize names to ensure uniform comparison (e.g., trimming spaces, converting to lowercase).
+    """
+    return name.strip().lower()
 
 def parse_person_name(full_name):
     """
@@ -47,7 +53,7 @@ def get_or_create_person(full_name):
     key = f"{parsed['vorname']} {parsed['name']}".strip()
     if key in person_cache:
         return person_cache[key]
-    
+
     # Try to find the person by fetching all persons and filtering locally.
     try:
         response = requests.get(PERSONS_URL)
@@ -89,9 +95,10 @@ def get_all_stuecke():
 
 def find_stueck_by_name(stueck_name, stuecke_list):
     """
-    Searches a list of stücke for one with the given name.
+    Searches a list of stücke for one with the given name (normalized).
     """
-    return next((s for s in stuecke_list if s.get("name") == stueck_name), None)
+    normalized_name = normalize_name(stueck_name)
+    return next((s for s in stuecke_list if normalize_name(s.get("name")) == normalized_name), None)
 
 def create_or_update_stueck(row):
     """
@@ -136,7 +143,7 @@ def create_or_update_stueck(row):
     # Refresh the global stücke cache by fetching all stücke.
     all_stuecke = get_all_stuecke()
     existing_stueck = find_stueck_by_name(stueck_name, all_stuecke)
-    
+
     if existing_stueck:
         stueck_id = existing_stueck["stid"]
         stuecke_cache[stueck_name] = stueck_id
