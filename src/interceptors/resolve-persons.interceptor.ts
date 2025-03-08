@@ -15,7 +15,6 @@ export class ResolvePersonsInterceptor implements NestInterceptor {
     async intercept(context: ExecutionContext, next: CallHandler): Promise<Observable<any>> {
         const request = context.switchToHttp().getRequest();
 
-        // Only intercept non-GET requests (i.e., when adding or modifying data)
         if (request.method === 'GET') {
             return next.handle();
         }
