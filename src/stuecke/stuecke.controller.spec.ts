@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { StueckeController } from './stuecke.controller';
-import { StueckeService } from './stuecke.service';
+import StueckeService from './stuecke.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 describe('StueckeController', () => {

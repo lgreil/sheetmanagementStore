@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AppController } from './app.controller';
-import { StueckeService } from './stuecke/stuecke.service';
+import StueckeService from './stuecke/stuecke.service';
 import { CreateStueckeDto } from './stuecke/dto/create-stuecke.dto';
 import { UpdateStueckeDto } from './stuecke/dto/update-stuecke.dto';
 
@@ -36,7 +36,7 @@ describe('AppController', () => {
   describe('create', () => {
     it('should create a stuecke', async () => {
       const dto: CreateStueckeDto = {
-        name: ''
+        name: '',
       };
       await expect(appController.create(dto)).resolves.toEqual({});
     });
@@ -56,7 +56,9 @@ describe('AppController', () => {
 
   describe('update', () => {
     it('should update a stuecke', async () => {
-      const dto: UpdateStueckeDto = { /* ...properties... */ };
+      const dto: UpdateStueckeDto = {
+        /* ...properties... */
+      };
       await expect(appController.update(1, dto)).resolves.toEqual({});
     });
   });
