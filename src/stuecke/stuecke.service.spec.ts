@@ -131,4 +131,79 @@ describe('StueckeService', () => {
     const result = await service.remove(1);
     expect(result).toEqual({ stid: 1 });
   });
+
+  it('should create a Stück with assigned composer and arranger', async () => {
+    const createStueckeDto = {
+      name: 'New Stück',
+      genre: 'Classical',
+      jahr: 2023,
+      schwierigkeit: 'Medium',
+      isdigitalisiert: true,
+      komponiert: {
+        create: [{ komid: 1 }, { komid: 2 }],
+      },
+      arrangiert: {
+        create: [{ arrid: 1 }, { arrid: 2 }],
+      },
+    };
+
+    const createdStuecke = {
+      stid: 1,
+      name: 'New Stück',
+      genre: 'Classical',
+      jahr: 2023,
+      schwierigkeit: 'Medium',
+      isdigitalisiert: true,
+    };
+
+    const expectedResult = {
+      stid: 1,
+      name: 'New Stück',
+      genre: 'Classical',
+      jahr: 2023,
+      schwierigkeit: 'Medium',
+      isdigitalisiert: true,
+    };
+
+    prisma.stuecke.create = jest.fn().mockResolvedValue(createdStuecke);
+
+    const result = await service.create(createStueckeDto);
+    expect(result).toEqual(expectedResult);
+  });
+
+  it('should create a missing person when creating a stueck', async () => {
+    const createStueckeDto = {
+      name: 'New Stück',
+      genre: 'Classical',
+      jahr: 2023,
+      schwierigkeit: 'Medium',
+      isdigitalisiert: true,
+      komponiert: {
+        create: [{ komid: 1 }, { komid: 2 }],
+      },
+      arrangiert: {
+        create: [{ arrid: 1 }, { arrid: 2 }],
+      },
+    };
+
+    const createdStuecke = {
+      stid: 1,
+      name: 'New Stück',
+      genre: 'Classical',
+      jahr: 2023,
+      schwierigkeit: 'Medium',
+      isdigitalisiert: true,
+    };
+
+    const expectedPerson = {
+      name: 'Doe',
+      vorname: 'John',
+      id: 1,
+    };
+
+    prisma.stuecke.create = jest.fn().mockResolvedValue(createdStuecke);
+
+    const result = await service.create(createStueckeDto);
+    expect(result.komponiert[0]).toEqual(expectedPerson);
+  });
 });
