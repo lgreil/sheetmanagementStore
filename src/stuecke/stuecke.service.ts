@@ -78,6 +78,7 @@ export default class StueckeService {
     });
     if (!stuecke) {
       throw new NotFoundException(`Stück with id ${id} not found`);
+
     }
     return this.formatStuecke(stuecke);
   }
@@ -110,6 +111,7 @@ export default class StueckeService {
           create: arrangerIds?.map((pid) => ({
             person: {
               connect: { pid },
+
             },
           })),
         },
@@ -205,3 +207,4 @@ export default class StueckeService {
     };
   }
 }
+

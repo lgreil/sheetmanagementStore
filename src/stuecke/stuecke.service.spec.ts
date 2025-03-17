@@ -21,6 +21,7 @@ describe('StueckeService', () => {
   });
 
   it('should create a new Stück', async () => {
+
     const createStueckeDto = {
       name: 'Test Stück',
     };
@@ -39,6 +40,7 @@ describe('StueckeService', () => {
       jahr: undefined,
       schwierigkeit: undefined,
       isdigitalisiert: undefined,
+
     };
     prisma.stuecke.create = jest.fn().mockResolvedValue(createdStuecke);
     const result = await service.create(createStueckeDto);
@@ -124,6 +126,7 @@ describe('StueckeService', () => {
 
     const result = await service.update(1, updateStueckeDto);
     expect(result).toEqual(expectedResult);
+
   });
 
   it('should delete a Stück by ID', async () => {
