@@ -2,6 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { PersonenService } from './personen.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotFoundException } from '@nestjs/common';
+import { create } from 'domain';
+
 
 describe('PersonenService', () => {
   let service: PersonenService;
@@ -58,4 +60,17 @@ describe('PersonenService', () => {
     const result = await service.remove(1);
     expect(result).toEqual({ pid: 1 });
   });
-});
+
+  it('should create a new person if not found in db already', async () => {
+    const createPersonenDto = { name: 'Doe', vorname: 'John' };
+    prisma.person.create = jest.fn().mockResolvedValue(createPersonenDto);
+    const result = await service.findOrCreatePerson(createPersonenDto.name, createPersonenDto.vorname);
+    expect(result).toEqual(createPersonenDto);
+  });
+
+  it('should find a person if already in db', async () => {
+    const person = { name: 'Doe', vorname: 'John' };
+    prisma.person.create = jest.fn().mockResolvedValue(person);
+    const result = await service.findOrCreatePerson(person.name, person.vorname);
+    expect(result).toEqual(1);
+  });
