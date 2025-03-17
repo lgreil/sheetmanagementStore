@@ -12,11 +12,10 @@ async function bootstrap() {
     .setVersion('0.1')
     .addTag('sheet')
     .build();
-
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
   app.enableCors({
-    origin: 'http://localhost:3000', // Allow requests from frontend
+    origin: ['http://localhost:3000', 'http://bachkreis.netlify.app'], // Allow requests from frontend and production
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     allowedHeaders: 'Content-Type, Authorization',
   });
