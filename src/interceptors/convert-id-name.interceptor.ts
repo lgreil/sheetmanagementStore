@@ -5,12 +5,13 @@ import {
   CallHandler,
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
 import { PrismaClient } from '@prisma/client';
+import { map } from 'rxjs/operators';
 
 @Injectable()
 export class ConvertIdNameInterceptor implements NestInterceptor {
-  private readonly personService = new PrismaClient().person;
+  private readonly prisma = new PrismaClient();
+  private readonly personService = this.prisma.person;
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
     return next.handle().pipe(
