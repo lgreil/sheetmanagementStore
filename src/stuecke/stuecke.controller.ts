@@ -6,16 +6,11 @@ import {
   Param,
   Patch,
   Post,
-  Put,
-  UseInterceptors,
-  UsePipes,
 } from '@nestjs/common';
 import { CreateStueckeDto } from './dto/create-stuecke.dto';
 import StueckeService from './stuecke.service';
 import { UpdateStueckeDto } from './dto/update-stuecke.dto';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
-import { ConvertIdNameInterceptor } from 'src/interceptors/convert-id-name.interceptor';
-import { ConvertNameIdInterceptor } from 'src/interceptors/convert-name-id.interceptor';
 
 @ApiTags('stuecke')
 @Controller('stuecke')
@@ -35,7 +30,6 @@ export class StueckeController {
 
   @ApiOperation({ summary: 'Get all Stücke' })
   @ApiResponse({ status: 200, description: 'Return all Stücke.' })
-  @UseInterceptors(ConvertIdNameInterceptor)
   @Get()
   async findAll() {
     return this.stueckeService.findAll();
@@ -45,7 +39,6 @@ export class StueckeController {
   @ApiResponse({ status: 200, description: 'Return the Stück.' })
   @ApiResponse({ status: 404, description: 'Stück not found.' })
   @Get(':id')
-  @UseInterceptors(ConvertIdNameInterceptor)
   async findOne(@Param('id') id: string) {
     return this.stueckeService.findOne(+id);
   }
