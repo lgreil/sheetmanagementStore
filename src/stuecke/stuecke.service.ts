@@ -78,9 +78,8 @@ export default class StueckeService {
     });
     if (!stuecke) {
       throw new NotFoundException(`Stück with id ${id} not found`);
-
     }
-    return this.formatStuecke(stuecke);
+    return this.formatStuecke(stuecke); // Apply formatStuecke to the result
   }
 
   @ApiOperation({ summary: 'Update a Stück by ID' })
@@ -170,7 +169,7 @@ export default class StueckeService {
         },
       },
     });
-    return stuecke;
+    return stuecke.map(this.formatStuecke); // Apply formatStuecke to each item
   }
 
   private formatStuecke(stuecke: {
@@ -202,8 +201,16 @@ export default class StueckeService {
       jahr: stuecke.jahr,
       schwierigkeit: stuecke.schwierigkeit,
       isdigitalisiert: stuecke.isdigitalisiert,
-      composers: stuecke.komponiert?.map((item) => item.person),
-      arrangers: stuecke.arrangiert?.map((item) => item.person),
+      arrangiert: stuecke.arrangiert?.map((item) => ({
+        pid: item.person.pid,
+        vorname: item.person.vorname,
+        name: item.person.name,
+      })),
+      komponiert: stuecke.komponiert?.map((item) => ({
+        pid: item.person.pid,
+        vorname: item.person.vorname,
+        name: item.person.name,
+      })),
     };
   }
 }

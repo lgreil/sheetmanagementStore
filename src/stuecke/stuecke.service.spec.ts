@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import StueckeService from './stuecke.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { NotFoundException } from '@nestjs/common';
+import { NotFoundException, BadRequestException } from '@nestjs/common';
 
 describe('StueckeService', () => {
   let service: StueckeService;
@@ -208,5 +208,135 @@ describe('StueckeService', () => {
 
     const result = await service.create(createStueckeDto);
     expect(result.komponiert[0]).toEqual(expectedPerson);
+  });
+});
+
+describe('StueckeService - Additional Tests', () => {
+  let service: StueckeService;
+  let prisma: PrismaService;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [StueckeService, PrismaService],
+    }).compile();
+
+    service = module.get<StueckeService>(StueckeService);
+    prisma = module.get<PrismaService>(PrismaService);
+  });
+
+  it('should throw BadRequestException for invalid create DTO', async () => {
+    const invalidDto = { name: '' }; // Missing required fields
+
+    await expect(service.create(invalidDto as any)).rejects.toThrow(BadRequestException);
+  });
+
+  it('should handle database constraint errors gracefully', async () => {
+    prisma.stuecke.create = jest.fn().mockRejectedValue(new Error('Unique constraint failed'));
+
+    const createStueckeDto = {
+      name: 'Duplicate Stück',
+    };
+
+    await expect(service.create(createStueckeDto)).rejects.toThrow('Unique constraint failed');
+  });
+
+  it('should throw NotFoundException for non-existent ID in update', async () => {
+    prisma.stuecke.findUnique = jest.fn().mockResolvedValue(null);
+
+    const updateStueckeDto = {
+      name: 'Non-existent Stück',
+    };
+
+    await expect(service.update(999, updateStueckeDto)).rejects.toThrow(NotFoundException);
+  });
+
+  it('should throw NotFoundException for non-existent ID in remove', async () => {
+    prisma.stuecke.findUnique = jest.fn().mockResolvedValue(null);
+
+    await expect(service.remove(999)).rejects.toThrow(NotFoundException);
+  });
+
+  it('should handle empty composer and arranger arrays in create', async () => {
+    const createStueckeDto = {
+      name: 'Test Stück',
+      composerIds: [],
+      arrangerIds: [],
+    };
+
+    prisma.stuecke.create = jest.fn().mockResolvedValue({
+      stid: 1,
+      name: 'Test Stück',
+    });
+
+    const result = await service.create(createStueckeDto);
+    expect(result).toEqual({
+      stid: 1,
+      name: 'Test Stück',
+    });
+  });
+});
+
+describe('StueckeService - Enhanced Tests', () => {
+  let service: StueckeService;
+  let prisma: PrismaService;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [StueckeService, PrismaService],
+    }).compile();
+
+    service = module.get<StueckeService>(StueckeService);
+    prisma = module.get<PrismaService>(PrismaService);
+  });
+
+  it('should throw BadRequestException for null create DTO', async () => {
+    await expect(service.create(null as any)).rejects.toThrow(BadRequestException);
+  });
+
+  it('should throw BadRequestException for undefined create DTO', async () => {
+    await expect(service.create(undefined as any)).rejects.toThrow(BadRequestException);
+  });
+
+  it('should call Prisma with correct arguments when creating a Stück', async () => {
+    const createStueckeDto = {
+      name: 'Valid Stück',
+      genre: 'Classical',
+      isdigitalisiert: true,
+      composerIds: [1, 2],
+      arrangerIds: [3, 4],
+    };
+
+    prisma.stuecke.create = jest.fn().mockResolvedValue({
+      stid: 1,
+      name: 'Valid Stück',
+    });
+
+    await service.create(createStueckeDto);
+
+    expect(prisma.stuecke.create).toHaveBeenCalledWith({
+      data: {
+        name: 'Valid Stück',
+        genre: 'Classical',
+        isdigitalisiert: true,
+        komponiert: {
+          create: [{ person: { connect: { pid: 1 } } }, { person: { connect: { pid: 2 } } }],
+        },
+        arrangiert: {
+          create: [{ person: { connect: { pid: 3 } } }, { person: { connect: { pid: 4 } } }],
+        },
+      },
+      include: {
+        arrangiert: { include: { person: true } },
+        komponiert: { include: { person: true } },
+      },
+    });
+  });
+
+  it('should return correct error message for NotFoundException in findOne', async () => {
+    prisma.stuecke.findUnique = jest.fn().mockResolvedValue(null);
+
+    await expect(service.findOne(999)).rejects.toThrowError(
+      new NotFoundException('Stück with id 999 not found'),
+    );
   });
 });
