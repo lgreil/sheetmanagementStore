@@ -2,8 +2,11 @@ import { NestFactory } from "@nestjs/core";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import { AppModule } from "./app.module";
 import { ValidationPipe } from "@nestjs/common";
+import * as dotenv from "dotenv";
 
 async function bootstrap() {
+  dotenv.config(); // Load the environment variables
+
   const app = await NestFactory.create(AppModule);
 
   // Add validation pipe for proper DTO validation
