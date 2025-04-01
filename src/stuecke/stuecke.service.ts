@@ -280,7 +280,6 @@ export default class StueckeService {
       throw error;
     }
   }
-
   async remove(id: number): Promise<stuecke> {
     try {
       // Using transaction to ensure all related operations succeed or fail together
