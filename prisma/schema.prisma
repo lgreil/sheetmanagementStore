@@ -8,63 +8,64 @@ datasource db {
 }
 
 model arrangiert {
-  pid    Int
-  stid   Int
-  person person @relation(fields: [pid], references: [pid], onDelete: Cascade, onUpdate: Cascade)
+  pid     Int
+  stid    Int
+  person  person  @relation(fields: [pid], references: [pid], onDelete: Cascade, onUpdate: Cascade)
   stuecke stuecke @relation(fields: [stid], references: [stid], onDelete: Cascade, onUpdate: Cascade, map: "arrangiert_prid_fkey")
 
   @@id([stid, pid])
 }
 
 model komponiert {
-  pid    Int
-  stid   Int
+  pid  Int
+  stid Int
 
-  person person @relation(fields: [pid], references: [pid], onDelete: Cascade, onUpdate: Cascade)
+  person  person  @relation(fields: [pid], references: [pid], onDelete: Cascade, onUpdate: Cascade)
   stuecke stuecke @relation(fields: [stid], references: [stid], onDelete: Cascade, onUpdate: Cascade)
 
   @@id([stid, pid])
 }
+
 model person {
   pid        Int          @id @default(autoincrement())
-  vorname    String?      @db.VarChar(255)
-  name       String?      @db.VarChar(255)
+  vorname    String?
+  name       String?
   arrangiert arrangiert[]
   komponiert komponiert[]
-  @@unique([name, vorname], name: "name_vorname_unique") // Ensure this exists
 
+  @@unique([name, vorname], name: "name_vorname_unique") // Ensure this exists
 }
 
 model programm {
   prid            Int               @id @default(autoincrement())
   datum           DateTime          @db.Date
-  orchester       String?           @db.VarChar(255)
+  orchester       String?
   wird_genutzt_in wird_genutzt_in[]
 }
 
 model schrank {
   srid Int    @id @default(autoincrement())
-  name String @db.VarChar(255)
+  name String
 }
 
 model stuecke {
   stid            Int               @id @default(autoincrement())
-  name            String            @db.VarChar(255)
-  schwierigkeit   String?           @db.VarChar(255)
-  genre           String?           @db.VarChar(255)
+  name            String
+  schwierigkeit   String?
+  genre           String?
   isdigitalisiert Boolean?
   jahr            Int?
   arrangiert      arrangiert[]
   komponiert      komponiert[]
   wird_genutzt_in wird_genutzt_in[]
 
-   @@map("stueck") // This tells Prisma that the table in PostgreSQL is named "Stueck"
+  @@map("stueck") // This tells Prisma that the table in PostgreSQL is named "Stueck"
 }
 
 model user {
   uid           Int       @id @default(autoincrement())
-  username      String    @unique @db.VarChar(50)
-  password_hash String    @db.VarChar(200)
+  username      String    @unique
+  password_hash String
   created_at    DateTime? @default(now()) @db.Timestamp(6)
   is_admin      Boolean?  @default(false)
 }
@@ -73,7 +74,7 @@ model wird_genutzt_in {
   prid     Int
   stid     Int
   programm programm @relation(fields: [prid], references: [prid], onDelete: NoAction, onUpdate: NoAction)
-  stuecke   stuecke   @relation(fields: [stid], references: [stid], onDelete: NoAction, onUpdate: NoAction)
+  stuecke  stuecke  @relation(fields: [stid], references: [stid], onDelete: NoAction, onUpdate: NoAction)
 
   @@id([prid, stid])
 }

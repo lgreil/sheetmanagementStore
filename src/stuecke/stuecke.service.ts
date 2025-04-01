@@ -5,15 +5,14 @@ import {
   Inject,
   BadRequestException,
   Logger,
-} from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { CreateStueckeDto } from './dto/create-stuecke.dto';
-import { UpdateStueckeDto } from './dto/update-stuecke.dto';
-import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
-import { ConvertIdNameInterceptor } from 'src/interceptors/convert-id-name.interceptor';
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import { Cache } from 'cache-manager';
-import { Prisma, stuecke } from '@prisma/client';
+} from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
+import { CreateStueckeDto } from "./dto/create-stuecke.dto";
+import { UpdateStueckeDto } from "./dto/update-stuecke.dto";
+import { ConvertIdNameInterceptor } from "src/interceptors/convert-id-name.interceptor";
+import { CACHE_MANAGER } from "@nestjs/cache-manager";
+import { Cache } from "cache-manager";
+import { Prisma, stuecke } from "@prisma/client";
 
 // Define types for better type safety
 export interface FilterParams {
@@ -25,8 +24,8 @@ export interface FilterParams {
 }
 
 export interface SortParams {
-  sortBy?: 'name' | 'genre' | 'jahr' | 'schwierigkeit';
-  sortOrder?: 'asc' | 'desc';
+  sortBy?: "name" | "genre" | "jahr" | "schwierigkeit";
+  sortOrder?: "asc" | "desc";
 }
 
 export interface PaginationParams {
@@ -89,7 +88,6 @@ export interface StueckeWithRelations extends stuecke {
   }[];
 }
 
-@ApiTags('stuecke')
 @Injectable()
 export default class StueckeService {
   private readonly logger = new Logger(StueckeService.name);
@@ -99,12 +97,6 @@ export default class StueckeService {
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
 
-  @ApiOperation({ summary: 'Create a new Stück' })
-  @ApiResponse({
-    status: 201,
-    description: 'The Stück has been successfully created.',
-  })
-  @ApiResponse({ status: 400, description: 'Bad Request.' })
   async create(
     createStueckeDto: CreateStueckeDto,
   ): Promise<StueckeWithRelations> {
@@ -137,41 +129,62 @@ export default class StueckeService {
         });
       });
 
-      // Prisma Accelerate automatically caches query results
-      // We don't need to manually invalidate caches as Accelerate handles it
       return stuecke;
     } catch (error) {
       this.logger.error(
-        `Failed to create Stück: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `Failed to create Stück: ${error instanceof Error ? error.message : "Unknown error"}`,
         error instanceof Error ? error.stack : undefined,
       );
       throw error;
     }
   }
 
-  @ApiOperation({ summary: 'Get a Stück by ID' })
-  @ApiResponse({ status: 200, description: 'Return the Stück.' })
-  @ApiResponse({ status: 404, description: 'Stück not found.' })
   @UseInterceptors(ConvertIdNameInterceptor)
   async findOne(id: number): Promise<FormattedStuecke> {
     try {
-      // With Prisma Accelerate, we can use the built-in caching
-      // The query results are automatically cached based on the query parameters
       const stuecke = await this.prisma.stuecke.findUnique({
         where: { stid: id },
-        include: this.getFullIncludeObject(),
-        // Prisma Accelerate automatically caches this query result
+        select: {
+          stid: true,
+          name: true,
+          genre: true,
+          jahr: true,
+          schwierigkeit: true,
+          isdigitalisiert: true,
+          arrangiert: {
+            select: {
+              person: {
+                select: {
+                  pid: true,
+                  name: true,
+                  vorname: true,
+                },
+              },
+            },
+          },
+          komponiert: {
+            select: {
+              person: {
+                select: {
+                  pid: true,
+                  name: true,
+                  vorname: true,
+                },
+              },
+            },
+          },
+        },
       });
 
       if (!stuecke) {
         throw new NotFoundException(`Stück with id ${id} not found`);
       }
 
-      return this.formatStuecke(stuecke);
+      return this.formatStuecke(stuecke as any);
     } catch (error) {
       if (!(error instanceof NotFoundException)) {
         this.logger.error(
-          `Error retrieving Stück ${id}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          `Error retrieving Stück ${id}: ${error instanceof Error ? error.message : "Unknown error"}`,
           error instanceof Error ? error.stack : undefined,
         );
       }
@@ -179,12 +192,6 @@ export default class StueckeService {
     }
   }
 
-  @ApiOperation({ summary: 'Update a Stück by ID' })
-  @ApiResponse({
-    status: 200,
-    description: 'The Stück has been successfully updated.',
-  })
-  @ApiResponse({ status: 404, description: 'Stück not found.' })
   async update(
     id: number,
     updateStueckeDto: UpdateStueckeDto,
@@ -194,6 +201,9 @@ export default class StueckeService {
 
       const existing = await this.prisma.stuecke.findUnique({
         where: { stid: id },
+        select: {
+          stid: true,
+        },
       });
 
       if (!existing) {
@@ -226,29 +236,50 @@ export default class StueckeService {
               })),
             },
           },
-          include: this.getFullIncludeObject(),
+          select: {
+            stid: true,
+            name: true,
+            genre: true,
+            jahr: true,
+            schwierigkeit: true,
+            isdigitalisiert: true,
+            arrangiert: {
+              select: {
+                person: {
+                  select: {
+                    pid: true,
+                    name: true,
+                    vorname: true,
+                  },
+                },
+              },
+            },
+            komponiert: {
+              select: {
+                person: {
+                  select: {
+                    pid: true,
+                    name: true,
+                    vorname: true,
+                  },
+                },
+              },
+            },
+          },
         });
       });
 
-      // Prisma Accelerate automatically updates its cache
-      return this.formatStuecke(updatedStuecke);
+      return this.formatStuecke(updatedStuecke as any);
     } catch (error) {
       if (!(error instanceof NotFoundException)) {
         this.logger.error(
-          `Error updating Stück ${id}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          `Error updating Stück ${id}: ${error instanceof Error ? error.message : "Unknown error"}`,
           error instanceof Error ? error.stack : undefined,
         );
       }
       throw error;
     }
   }
-
-  @ApiOperation({ summary: 'Delete a Stück by ID' })
-  @ApiResponse({
-    status: 200,
-    description: 'The Stück has been successfully deleted.',
-  })
-  @ApiResponse({ status: 404, description: 'Stück not found.' })
   async remove(id: number): Promise<stuecke> {
     try {
       // Using transaction to ensure all related operations succeed or fail together
@@ -258,100 +289,29 @@ export default class StueckeService {
         await tx.arrangiert.deleteMany({ where: { stid: id } });
 
         // Then delete the main record
-        return await tx.stuecke.delete({ where: { stid: id } });
+        return await tx.stuecke.delete({
+          where: { stid: id },
+          select: {
+            stid: true,
+            name: true,
+            genre: true,
+            jahr: true,
+            schwierigkeit: true,
+            isdigitalisiert: true,
+          },
+        });
       });
 
-      // Prisma Accelerate automatically updates its cache
-      return result;
+      return result as any;
     } catch (error) {
       this.logger.error(
-        `Error deleting Stück ${id}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `Error deleting Stück ${id}: ${error instanceof Error ? error.message : "Unknown error"}`,
         error instanceof Error ? error.stack : undefined,
       );
       throw error;
     }
   }
 
-  @ApiOperation({
-    summary: 'Get all Stücke with filtering, sorting, and pagination',
-  })
-  @ApiQuery({
-    name: 'page',
-    required: false,
-    type: Number,
-    description: 'Page number (starts from 1)',
-  })
-  @ApiQuery({
-    name: 'limit',
-    required: false,
-    type: Number,
-    description: 'Number of items per page (1-100)',
-  })
-  @ApiQuery({
-    name: 'name',
-    required: false,
-    type: String,
-    description: 'Filter by name (partial match)',
-  })
-  @ApiQuery({
-    name: 'genre',
-    required: false,
-    type: String,
-    description: 'Filter by genre',
-  })
-  @ApiQuery({
-    name: 'isdigitalisiert',
-    required: false,
-    type: Boolean,
-    description: 'Filter by digitalization status',
-  })
-  @ApiQuery({
-    name: 'composerName',
-    required: false,
-    type: String,
-    description: 'Filter by composer name (partial match)',
-  })
-  @ApiQuery({
-    name: 'arrangerName',
-    required: false,
-    type: String,
-    description: 'Filter by arranger name (partial match)',
-  })
-  @ApiQuery({
-    name: 'sortBy',
-    required: false,
-    enum: ['name', 'genre', 'jahr', 'schwierigkeit'],
-    description: 'Field to sort by',
-  })
-  @ApiQuery({
-    name: 'sortOrder',
-    required: false,
-    enum: ['asc', 'desc'],
-    description: 'Sort order (ascending or descending)',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Return filtered, sorted, and paginated Stücke.',
-    schema: {
-      properties: {
-        data: {
-          type: 'array',
-          items: { type: 'object' },
-        },
-        meta: {
-          type: 'object',
-          properties: {
-            total: { type: 'number' },
-            page: { type: 'number' },
-            lastPage: { type: 'number' },
-            limit: { type: 'number' },
-            filters: { type: 'object' },
-            sorting: { type: 'object' },
-          },
-        },
-      },
-    },
-  })
   @UseInterceptors(ConvertIdNameInterceptor)
   async findAll(
     queryParams?: QueryParams,
@@ -372,18 +332,16 @@ export default class StueckeService {
 
       const sorting: SortParams = {
         sortBy: queryParams?.sortBy,
-        sortOrder: queryParams?.sortOrder || 'asc',
+        sortOrder: queryParams?.sortOrder || "asc",
       };
 
       const where = this.buildWhereClause(filters);
       const orderBy = this.buildOrderByClause(sorting);
 
-      // Prisma Accelerate will automatically cache this query
-      // Note: Using two separate queries is more efficient with Accelerate
-      // as each can be cached and reused independently
-
       // First query: Get total count
-      const countResult = await this.prisma.stuecke.count({ where });
+      const countResult = await this.prisma.stuecke.count({
+        where,
+      });
 
       // Second query: Get paginated results
       const stuecke = await this.prisma.stuecke.findMany({
@@ -391,11 +349,40 @@ export default class StueckeService {
         orderBy,
         skip,
         take: limit,
-        include: this.getFullIncludeObject(),
+        select: {
+          stid: true,
+          name: true,
+          genre: true,
+          jahr: true,
+          schwierigkeit: true,
+          isdigitalisiert: true,
+          arrangiert: {
+            select: {
+              person: {
+                select: {
+                  pid: true,
+                  name: true,
+                  vorname: true,
+                },
+              },
+            },
+          },
+          komponiert: {
+            select: {
+              person: {
+                select: {
+                  pid: true,
+                  name: true,
+                  vorname: true,
+                },
+              },
+            },
+          },
+        },
       });
 
       const formattedData: FormattedStuecke[] = stuecke.map((item) =>
-        this.formatStuecke(item),
+        this.formatStuecke(item as any),
       );
       const lastPage = Math.ceil(countResult / limit);
 
@@ -419,7 +406,7 @@ export default class StueckeService {
       return response;
     } catch (error) {
       this.logger.error(
-        `Error retrieving Stücke list: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `Error retrieving Stücke list: ${error instanceof Error ? error.message : "Unknown error"}`,
         error instanceof Error ? error.stack : undefined,
       );
       throw error;
@@ -433,7 +420,7 @@ export default class StueckeService {
     if (page === undefined) return 1;
     const parsedPage = Number(page);
     if (isNaN(parsedPage) || parsedPage < 1) {
-      throw new BadRequestException('Page must be a positive integer');
+      throw new BadRequestException("Page must be a positive integer");
     }
     return parsedPage;
   }
@@ -445,7 +432,7 @@ export default class StueckeService {
     if (limit === undefined) return 10;
     const parsedLimit = Number(limit);
     if (isNaN(parsedLimit) || parsedLimit < 1 || parsedLimit > 100) {
-      throw new BadRequestException('Limit must be between 1 and 100');
+      throw new BadRequestException("Limit must be between 1 and 100");
     }
     return parsedLimit;
   }
@@ -457,7 +444,7 @@ export default class StueckeService {
     const where: Prisma.stueckeWhereInput = {};
 
     if (filters.name) {
-      where.name = { contains: filters.name, mode: 'insensitive' };
+      where.name = { contains: filters.name, mode: "insensitive" };
     }
 
     if (filters.genre) {
@@ -473,11 +460,11 @@ export default class StueckeService {
         some: {
           person: {
             OR: [
-              { name: { contains: filters.composerName, mode: 'insensitive' } },
+              { name: { contains: filters.composerName, mode: "insensitive" } },
               {
                 vorname: {
                   contains: filters.composerName,
-                  mode: 'insensitive',
+                  mode: "insensitive",
                 },
               },
             ],
@@ -491,11 +478,11 @@ export default class StueckeService {
         some: {
           person: {
             OR: [
-              { name: { contains: filters.arrangerName, mode: 'insensitive' } },
+              { name: { contains: filters.arrangerName, mode: "insensitive" } },
               {
                 vorname: {
                   contains: filters.arrangerName,
-                  mode: 'insensitive',
+                  mode: "insensitive",
                 },
               },
             ],
@@ -513,13 +500,25 @@ export default class StueckeService {
   private getFullIncludeObject() {
     return {
       arrangiert: {
-        include: {
-          person: true,
+        select: {
+          person: {
+            select: {
+              pid: true,
+              name: true,
+              vorname: true,
+            },
+          },
         },
       },
       komponiert: {
-        include: {
-          person: true,
+        select: {
+          person: {
+            select: {
+              pid: true,
+              name: true,
+              vorname: true,
+            },
+          },
         },
       },
     };
@@ -532,22 +531,22 @@ export default class StueckeService {
     sorting: SortParams,
   ): Prisma.stueckeOrderByWithRelationInput {
     if (!sorting.sortBy) {
-      return { name: 'asc' };
+      return { name: "asc" };
     }
 
-    const direction = sorting.sortOrder === 'desc' ? 'desc' : 'asc';
+    const direction = sorting.sortOrder === "desc" ? "desc" : "asc";
 
     switch (sorting.sortBy) {
-      case 'name':
+      case "name":
         return { name: direction };
-      case 'genre':
+      case "genre":
         return { genre: direction };
-      case 'jahr':
+      case "jahr":
         return { jahr: direction };
-      case 'schwierigkeit':
+      case "schwierigkeit":
         return { schwierigkeit: direction };
       default:
-        return { name: 'asc' };
+        return { name: "asc" };
     }
   }
 
