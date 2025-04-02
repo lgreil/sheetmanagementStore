@@ -6,9 +6,13 @@ WORKDIR /usr/src/app
 
 # A wildcard is used to ensure both package.json AND package-lock.json are copied
 COPY package*.json ./
+COPY prisma ./prisma/
 
 # Install app dependencies
 RUN pnpm install
+
+# Generate Prisma Client
+RUN pnpm prisma generate
 
 # Bundle app source
 COPY . .
@@ -18,7 +22,6 @@ RUN pnpm run build
 
 # Set environment variables
 ENV NODE_ENV production
-ENV DATABASE_URL ${DATABASE_URL}
 
 # Start the server using the production build
 CMD [ "pnpm", "run", "start:prod" ]

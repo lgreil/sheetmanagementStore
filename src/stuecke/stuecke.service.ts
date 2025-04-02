@@ -91,11 +91,34 @@ export interface StueckeWithRelations extends stuecke {
 @Injectable()
 export default class StueckeService {
   private readonly logger = new Logger(StueckeService.name);
+  private readonly cache = new Map<string, any>();
+  private readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
   constructor(
     private prisma: PrismaService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
+
+  private getCacheKey(id: number): string {
+    return `stuecke:${id}`;
+  }
+
+  private setCache(key: string, value: any): void {
+    this.cache.set(key, {
+      value,
+      timestamp: Date.now(),
+    });
+  }
+
+  private getCache(key: string): any | null {
+    const cached = this.cache.get(key);
+    if (!cached) return null;
+    if (Date.now() - cached.timestamp > this.CACHE_TTL) {
+      this.cache.delete(key);
+      return null;
+    }
+    return cached.value;
+  }
 
   async create(
     createStueckeDto: CreateStueckeDto,
@@ -142,6 +165,10 @@ export default class StueckeService {
   @UseInterceptors(ConvertIdNameInterceptor)
   async findOne(id: number): Promise<FormattedStuecke> {
     try {
+      const cacheKey = this.getCacheKey(id);
+      const cached = this.getCache(cacheKey);
+      if (cached) return cached;
+
       const stuecke = await this.prisma.stuecke.findUnique({
         where: { stid: id },
         select: {
@@ -180,7 +207,9 @@ export default class StueckeService {
         throw new NotFoundException(`Stück with id ${id} not found`);
       }
 
-      return this.formatStuecke(stuecke as any);
+      const formatted = this.formatStuecke(stuecke as any);
+      this.setCache(cacheKey, formatted);
+      return formatted;
     } catch (error) {
       if (!(error instanceof NotFoundException)) {
         this.logger.error(
@@ -338,48 +367,46 @@ export default class StueckeService {
       const where = this.buildWhereClause(filters);
       const orderBy = this.buildOrderByClause(sorting);
 
-      // First query: Get total count
-      const countResult = await this.prisma.stuecke.count({
-        where,
-      });
-
-      // Second query: Get paginated results
-      const stuecke = await this.prisma.stuecke.findMany({
-        where,
-        orderBy,
-        skip,
-        take: limit,
-        select: {
-          stid: true,
-          name: true,
-          genre: true,
-          jahr: true,
-          schwierigkeit: true,
-          isdigitalisiert: true,
-          arrangiert: {
-            select: {
-              person: {
-                select: {
-                  pid: true,
-                  name: true,
-                  vorname: true,
+      // Use a single query with count and data
+      const [countResult, stuecke] = await Promise.all([
+        this.prisma.stuecke.count({ where }),
+        this.prisma.stuecke.findMany({
+          where,
+          orderBy,
+          skip,
+          take: limit,
+          select: {
+            stid: true,
+            name: true,
+            genre: true,
+            jahr: true,
+            schwierigkeit: true,
+            isdigitalisiert: true,
+            arrangiert: {
+              select: {
+                person: {
+                  select: {
+                    pid: true,
+                    name: true,
+                    vorname: true,
+                  },
+                },
+              },
+            },
+            komponiert: {
+              select: {
+                person: {
+                  select: {
+                    pid: true,
+                    name: true,
+                    vorname: true,
+                  },
                 },
               },
             },
           },
-          komponiert: {
-            select: {
-              person: {
-                select: {
-                  pid: true,
-                  name: true,
-                  vorname: true,
-                },
-              },
-            },
-          },
-        },
-      });
+        }),
+      ]);
 
       const formattedData: FormattedStuecke[] = stuecke.map((item) =>
         this.formatStuecke(item as any),
