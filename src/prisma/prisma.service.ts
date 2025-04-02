@@ -8,7 +8,6 @@ export class PrismaService
 {
   async onModuleInit() {
     console.log("PrismaService initializing...");
-    console.log("DATABASE_URL:", process.env.DATABASE_URL); // Log the variable at runtime
     await this.$connect();
   }
 
