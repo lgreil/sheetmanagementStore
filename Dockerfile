@@ -26,7 +26,9 @@ RUN pnpm run build
 # Set environment variables
 ENV NODE_ENV production
 
+# Add healthcheck
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+    CMD pnpm prisma db push --skip-generate
+
 # Start the server using the production build
 CMD [ "pnpm", "run", "start:prod" ]
-# Add another runner for development
-CMD [ "pnpm", "run", "start" ]

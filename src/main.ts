@@ -3,9 +3,24 @@ import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import { AppModule } from "./app.module";
 import { ValidationPipe } from "@nestjs/common";
 import * as dotenv from "dotenv";
+import { Logger } from "@nestjs/common";
 
 async function bootstrap() {
-  dotenv.config(); // Load the environment variables
+  const logger = new Logger('Bootstrap');
+  
+  // Load environment variables
+  const result = dotenv.config();
+  if (result.error) {
+    logger.warn('No .env file found, using environment variables');
+  }
+
+  // Validate required environment variables
+  const requiredEnvVars = ['DATABASE_URL'];
+  const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar]);
+  
+  if (missingEnvVars.length > 0) {
+    throw new Error(`Missing required environment variables: ${missingEnvVars.join(', ')}`);
+  }
 
   const app = await NestFactory.create(AppModule);
 
@@ -45,6 +60,10 @@ async function bootstrap() {
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
     allowedHeaders: "Content-Type, Authorization",
   });
-  await app.listen(process.env.PORT ?? 3005);
+
+  const port = process.env.PORT ?? 3005;
+  await app.listen(port);
+  logger.log(`Application is running on: http://localhost:${port}`);
+  logger.log(`Swagger documentation is available at: http://localhost:${port}/api`);
 }
 bootstrap();
