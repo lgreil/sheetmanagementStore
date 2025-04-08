@@ -13,6 +13,10 @@ import { ConvertIdNameInterceptor } from "src/interceptors/convert-id-name.inter
 import { CACHE_MANAGER } from "@nestjs/cache-manager";
 import { Cache } from "cache-manager";
 import { Prisma, stuecke } from "@prisma/client";
+import { StueckeRepository } from '../repositories/stuecke.repository';
+import { QueryParams } from './dto/query-params.dto';
+import { PaginatedResponse } from '../interfaces/paginated-response.interface';
+import { FormattedStuecke } from '../interfaces/formatted-stuecke.interface';
 
 // Define types for better type safety
 export interface FilterParams {
@@ -97,6 +101,7 @@ export default class StueckeService {
   constructor(
     private prisma: PrismaService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
+    private readonly stueckeRepository: StueckeRepository
   ) {}
 
   private getCacheKey(id: number): string {
@@ -346,95 +351,33 @@ export default class StueckeService {
     queryParams?: QueryParams,
   ): Promise<PaginatedResponse<FormattedStuecke>> {
     try {
-      // Validate pagination parameters
-      const page = this.validatePageParam(queryParams?.page);
-      const limit = this.validateLimitParam(queryParams?.limit);
-      const skip = (page - 1) * limit;
-
-      const filters: FilterParams = {
-        name: queryParams?.name,
-        genre: queryParams?.genre,
-        isdigitalisiert: queryParams?.isdigitalisiert,
-        composerName: queryParams?.composerName,
-        arrangerName: queryParams?.arrangerName,
-      };
-
-      const sorting: SortParams = {
-        sortBy: queryParams?.sortBy,
-        sortOrder: queryParams?.sortOrder || "asc",
-      };
-
-      const where = this.buildWhereClause(filters);
-      const orderBy = this.buildOrderByClause(sorting);
-
-      // Use a single query with count and data
-      const [countResult, stuecke] = await Promise.all([
-        this.prisma.stuecke.count({ where }),
-        this.prisma.stuecke.findMany({
-          where,
-          orderBy,
-          skip,
-          take: limit,
-          select: {
-            stid: true,
-            name: true,
-            genre: true,
-            jahr: true,
-            schwierigkeit: true,
-            isdigitalisiert: true,
-            arrangiert: {
-              select: {
-                person: {
-                  select: {
-                    pid: true,
-                    name: true,
-                    vorname: true,
-                  },
-                },
-              },
-            },
-            komponiert: {
-              select: {
-                person: {
-                  select: {
-                    pid: true,
-                    name: true,
-                    vorname: true,
-                  },
-                },
-              },
-            },
-          },
-        }),
+      const [stuecke, total] = await Promise.all([
+        this.stueckeRepository.findAll(queryParams),
+        this.stueckeRepository.count(queryParams)
       ]);
 
-      const formattedData: FormattedStuecke[] = stuecke.map((item) =>
-        this.formatStuecke(item as any),
-      );
-      const lastPage = Math.ceil(countResult / limit);
+      const { page = 1, limit = 10 } = queryParams || {};
+      const lastPage = Math.ceil(total / limit);
 
-      const response: PaginatedResponse<FormattedStuecke> = {
+      const formattedData: FormattedStuecke[] = stuecke.map((item) =>
+        this.formatStuecke(item as any)
+      );
+
+      return {
         data: formattedData,
         meta: {
-          total: countResult,
+          total,
           page,
           lastPage,
           limit,
-          filters:
-            Object.keys(filters).filter(
-              (k) => filters[k as keyof FilterParams] !== undefined,
-            ).length > 0
-              ? filters
-              : undefined,
-          sorting: sorting.sortBy ? sorting : undefined,
-        },
+          filters: this.extractFilters(queryParams),
+          sorting: this.extractSorting(queryParams)
+        }
       };
-
-      return response;
     } catch (error) {
       this.logger.error(
         `Error retrieving Stücke list: ${error instanceof Error ? error.message : "Unknown error"}`,
-        error instanceof Error ? error.stack : undefined,
+        error instanceof Error ? error.stack : undefined
       );
       throw error;
     }
@@ -601,5 +544,24 @@ export default class StueckeService {
           name: item.person.name,
         })) || [],
     };
+  }
+
+  private extractFilters(queryParams?: QueryParams) {
+    if (!queryParams) return undefined;
+    const { name, genre, isdigitalisiert, composerName, arrangerName } = queryParams;
+    const filters: any = {};
+    if (name) filters.name = name;
+    if (genre) filters.genre = genre;
+    if (isdigitalisiert !== undefined) filters.isdigitalisiert = isdigitalisiert;
+    if (composerName) filters.composerName = composerName;
+    if (arrangerName) filters.arrangerName = arrangerName;
+    return Object.keys(filters).length > 0 ? filters : undefined;
+  }
+
+  private extractSorting(queryParams?: QueryParams) {
+    if (!queryParams) return undefined;
+    const { sortBy, sortOrder } = queryParams;
+    if (!sortBy) return undefined;
+    return { sortBy, sortOrder: sortOrder || 'asc' };
   }
 }

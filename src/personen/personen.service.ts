@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { PersonenRepository } from '../repositories/personen.repository';
+import { Person } from '@prisma/client';
 import { CreatePersonenDto } from './dto/create-personen.dto';
 import { UpdatePersonenDto } from './dto/update-personen.dto';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
@@ -7,27 +8,30 @@ import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 @ApiTags('personen')
 @Injectable()
 export class PersonenService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private readonly personenRepository: PersonenRepository) {}
 
-  async findOrCreatePerson(name: string, vorname: string): Promise<number> {
-    const existingPerson = await this.prisma.person.findUnique({
-      where: {
-        name_vorname_unique: {
-          name,
-          vorname,
-        },
-      },
-    });
-    if (existingPerson) {
-      return existingPerson.pid;
+  async findAll(): Promise<Person[]> {
+    return this.personenRepository.findAll();
+  }
+
+  async findOne(id: number): Promise<Person> {
+    const person = await this.personenRepository.findById(id);
+    if (!person) {
+      throw new NotFoundException(`Person with ID ${id} not found`);
     }
-    const newPerson = await this.prisma.person.create({
-      data: {
-        name,
-        vorname,
-      },
+    return person;
+  }
+
+  async findOrCreatePerson(fullName: string, role: 'composer' | 'arranger'): Promise<number> {
+    const [vorname, ...rest] = fullName.trim().split(' ');
+    const name = rest.join(' ') || vorname;
+
+    const person = await this.personenRepository.findOrCreate({
+      name,
+      vorname
     });
-    return newPerson.pid;
+
+    return person.pid;
   }
 
   @ApiOperation({ summary: 'Create a new person' })
@@ -37,26 +41,7 @@ export class PersonenService {
   })
   @ApiResponse({ status: 400, description: 'Bad Request.' })
   create(createPersonenDto: CreatePersonenDto) {
-    return this.prisma.person.create({
-      data: createPersonenDto,
-    });
-  }
-
-  @ApiOperation({ summary: 'Get all persons' })
-  @ApiResponse({ status: 200, description: 'Return all persons.' })
-  findAll() {
-    return this.prisma.person.findMany();
-  }
-
-  @ApiOperation({ summary: 'Get a person by ID' })
-  @ApiResponse({ status: 200, description: 'Return the person.' })
-  @ApiResponse({ status: 404, description: 'Person not found.' })
-  async findOne(id: number) {
-    const person = await this.prisma.person.findUnique({ where: { pid: id } });
-    if (!person) {
-      throw new NotFoundException(`Person with ID ${id} not found`);
-    }
-    return person;
+    return this.personenRepository.create(createPersonenDto);
   }
 
   @ApiOperation({ summary: 'Update a person by ID' })
@@ -66,10 +51,7 @@ export class PersonenService {
   })
   @ApiResponse({ status: 404, description: 'Person not found.' })
   update(pid: number, updatePersonenDto: UpdatePersonenDto) {
-    return this.prisma.person.update({
-      where: { pid },
-      data: updatePersonenDto,
-    });
+    return this.personenRepository.update(pid, updatePersonenDto);
   }
 
   @ApiOperation({ summary: 'Delete a person by ID' })
@@ -79,8 +61,6 @@ export class PersonenService {
   })
   @ApiResponse({ status: 404, description: 'Person not found.' })
   remove(pid: number) {
-    return this.prisma.person.delete({
-      where: { pid },
-    });
+    return this.personenRepository.delete(pid);
   }
 }
