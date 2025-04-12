@@ -1,8 +1,8 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { BaseRepository } from './base.repository';
-import { Stuecke, Prisma } from '@prisma/client';
-import { QueryParams } from '../stuecke/dto/query-params.dto';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
+import { BaseRepository } from "./base.repository";
+import { stuecke as Stuecke, Prisma } from "@prisma/client";
+import { QueryParams } from "src/stuecke/stuecke.service";
 
 @Injectable()
 export class StueckeRepository extends BaseRepository<Stuecke> {
@@ -11,43 +11,69 @@ export class StueckeRepository extends BaseRepository<Stuecke> {
   }
 
   async findAll(queryParams?: QueryParams): Promise<Stuecke[]> {
-    const { page = 1, limit = 10, name, genre, isdigitalisiert, composerName, arrangerName, sortBy, sortOrder } = queryParams || {};
-    
-    const where: Prisma.StueckeWhereInput = {
+    const {
+      page = 1,
+      limit = 10,
+      name,
+      genre,
+      isdigitalisiert,
+      composerName,
+      arrangerName,
+      sortBy,
+      sortOrder,
+    } = queryParams || {};
+
+    const where: Prisma.stueckeWhereInput = {
       AND: [
-        name ? { name: { contains: name, mode: 'insensitive' } } : {},
-        genre ? { genre: { equals: genre, mode: 'insensitive' } } : {},
+        name ? { name: { contains: name, mode: "insensitive" } } : {},
+        genre ? { genre: { equals: genre, mode: "insensitive" } } : {},
         isdigitalisiert !== undefined ? { isdigitalisiert } : {},
-        composerName ? {
-          komponiert: {
-            some: {
-              person: {
-                OR: [
-                  { name: { contains: composerName, mode: 'insensitive' } },
-                  { vorname: { contains: composerName, mode: 'insensitive' } }
-                ]
-              }
+        composerName
+          ? {
+              komponiert: {
+                some: {
+                  person: {
+                    OR: [
+                      { name: { contains: composerName, mode: "insensitive" } },
+                      {
+                        vorname: {
+                          contains: composerName,
+                          mode: "insensitive",
+                        },
+                      },
+                    ],
+                  },
+                },
+              },
             }
-          }
-        } : {},
-        arrangerName ? {
-          arrangiert: {
-            some: {
-              person: {
-                OR: [
-                  { name: { contains: arrangerName, mode: 'insensitive' } },
-                  { vorname: { contains: arrangerName, mode: 'insensitive' } }
-                ]
-              }
+          : {},
+        arrangerName
+          ? {
+              arrangiert: {
+                some: {
+                  person: {
+                    OR: [
+                      { name: { contains: arrangerName, mode: "insensitive" } },
+                      {
+                        vorname: {
+                          contains: arrangerName,
+                          mode: "insensitive",
+                        },
+                      },
+                    ],
+                  },
+                },
+              },
             }
-          }
-        } : {}
-      ]
+          : {},
+      ],
     };
 
-    const orderBy: Prisma.StueckeOrderByWithRelationInput = sortBy ? {
-      [sortBy]: sortOrder || 'asc'
-    } : {};
+    const orderBy: Prisma.stueckeOrderByWithRelationInput = sortBy
+      ? {
+          [sortBy]: sortOrder || "asc",
+        }
+      : {};
 
     return this.prisma.stuecke.findMany({
       where,
@@ -57,15 +83,15 @@ export class StueckeRepository extends BaseRepository<Stuecke> {
       include: {
         komponiert: {
           include: {
-            person: true
-          }
+            person: true,
+          },
         },
         arrangiert: {
           include: {
-            person: true
-          }
-        }
-      }
+            person: true,
+          },
+        },
+      },
     });
   }
 
@@ -75,96 +101,111 @@ export class StueckeRepository extends BaseRepository<Stuecke> {
       include: {
         komponiert: {
           include: {
-            person: true
-          }
+            person: true,
+          },
         },
         arrangiert: {
           include: {
-            person: true
-          }
-        }
-      }
+            person: true,
+          },
+        },
+      },
     });
   }
 
-  async create(data: Prisma.StueckeCreateInput): Promise<Stuecke> {
+  async create(data: Prisma.stueckeCreateInput): Promise<Stuecke> {
     return this.prisma.stuecke.create({
       data,
       include: {
         komponiert: {
           include: {
-            person: true
-          }
+            person: true,
+          },
         },
         arrangiert: {
           include: {
-            person: true
-          }
-        }
-      }
+            person: true,
+          },
+        },
+      },
     });
   }
 
-  async update(id: number, data: Prisma.StueckeUpdateInput): Promise<Stuecke> {
+  async update(id: number, data: Prisma.stueckeUpdateInput): Promise<Stuecke> {
     return this.prisma.stuecke.update({
       where: { stid: id },
       data,
       include: {
         komponiert: {
           include: {
-            person: true
-          }
+            person: true,
+          },
         },
         arrangiert: {
           include: {
-            person: true
-          }
-        }
-      }
+            person: true,
+          },
+        },
+      },
     });
   }
 
   async delete(id: number): Promise<void> {
     await this.prisma.stuecke.delete({
-      where: { stid: id }
+      where: { stid: id },
     });
   }
 
   async count(queryParams?: QueryParams): Promise<number> {
-    const { name, genre, isdigitalisiert, composerName, arrangerName } = queryParams || {};
-    
-    const where: Prisma.StueckeWhereInput = {
+    const { name, genre, isdigitalisiert, composerName, arrangerName } =
+      queryParams || {};
+
+    const where: Prisma.stueckeWhereInput = {
       AND: [
-        name ? { name: { contains: name, mode: 'insensitive' } } : {},
-        genre ? { genre: { equals: genre, mode: 'insensitive' } } : {},
+        name ? { name: { contains: name, mode: "insensitive" } } : {},
+        genre ? { genre: { equals: genre, mode: "insensitive" } } : {},
         isdigitalisiert !== undefined ? { isdigitalisiert } : {},
-        composerName ? {
-          komponiert: {
-            some: {
-              person: {
-                OR: [
-                  { name: { contains: composerName, mode: 'insensitive' } },
-                  { vorname: { contains: composerName, mode: 'insensitive' } }
-                ]
-              }
+        composerName
+          ? {
+              komponiert: {
+                some: {
+                  person: {
+                    OR: [
+                      { name: { contains: composerName, mode: "insensitive" } },
+                      {
+                        vorname: {
+                          contains: composerName,
+                          mode: "insensitive",
+                        },
+                      },
+                    ],
+                  },
+                },
+              },
             }
-          }
-        } : {},
-        arrangerName ? {
-          arrangiert: {
-            some: {
-              person: {
-                OR: [
-                  { name: { contains: arrangerName, mode: 'insensitive' } },
-                  { vorname: { contains: arrangerName, mode: 'insensitive' } }
-                ]
-              }
+          : {},
+        arrangerName
+          ? {
+              arrangiert: {
+                some: {
+                  person: {
+                    OR: [
+                      { name: { contains: arrangerName, mode: "insensitive" } },
+                      {
+                        vorname: {
+                          contains: arrangerName,
+                          mode: "insensitive",
+                        },
+                      },
+                    ],
+                  },
+                },
+              },
             }
-          }
-        } : {}
-      ]
+          : {},
+      ],
     };
 
     return this.prisma.stuecke.count({ where });
   }
-} 
+}

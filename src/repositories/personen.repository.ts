@@ -1,7 +1,7 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { BaseRepository } from './base.repository';
-import { Person, Prisma } from '@prisma/client';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
+import { BaseRepository } from "./base.repository";
+import { person as Person, Prisma } from "@prisma/client";
 
 @Injectable()
 export class PersonenRepository extends BaseRepository<Person> {
@@ -15,26 +15,26 @@ export class PersonenRepository extends BaseRepository<Person> {
 
   async findById(id: number): Promise<Person | null> {
     return this.prisma.person.findUnique({
-      where: { pid: id }
+      where: { pid: id },
     });
   }
 
-  async create(data: Prisma.PersonCreateInput): Promise<Person> {
+  async create(data: Prisma.personCreateInput): Promise<Person> {
     return this.prisma.person.create({
-      data
+      data,
     });
   }
 
-  async update(id: number, data: Prisma.PersonUpdateInput): Promise<Person> {
+  async update(id: number, data: Prisma.personUpdateInput): Promise<Person> {
     return this.prisma.person.update({
       where: { pid: id },
-      data
+      data,
     });
   }
 
   async delete(id: number): Promise<void> {
     await this.prisma.person.delete({
-      where: { pid: id }
+      where: { pid: id },
     });
   }
 
@@ -43,11 +43,11 @@ export class PersonenRepository extends BaseRepository<Person> {
       where: {
         name_vorname_unique: {
           name: data.name,
-          vorname: data.vorname
-        }
+          vorname: data.vorname,
+        },
       },
       update: {},
-      create: data
+      create: data,
     });
   }
-} 
+}

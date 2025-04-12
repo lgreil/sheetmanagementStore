@@ -13,10 +13,7 @@ import { ConvertIdNameInterceptor } from "src/interceptors/convert-id-name.inter
 import { CACHE_MANAGER } from "@nestjs/cache-manager";
 import { Cache } from "cache-manager";
 import { Prisma, stuecke } from "@prisma/client";
-import { StueckeRepository } from '../repositories/stuecke.repository';
-import { QueryParams } from './dto/query-params.dto';
-import { PaginatedResponse } from '../interfaces/paginated-response.interface';
-import { FormattedStuecke } from '../interfaces/formatted-stuecke.interface';
+import { StueckeRepository } from "../repositories/stuecke.repository";
 
 // Define types for better type safety
 export interface FilterParams {
@@ -100,8 +97,8 @@ export default class StueckeService {
 
   constructor(
     private prisma: PrismaService,
-    @Inject(CACHE_MANAGER) private cacheManager: Cache,
-    private readonly stueckeRepository: StueckeRepository
+    @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
+    private readonly stueckeRepository: StueckeRepository,
   ) {}
 
   private getCacheKey(id: number): string {
@@ -353,14 +350,14 @@ export default class StueckeService {
     try {
       const [stuecke, total] = await Promise.all([
         this.stueckeRepository.findAll(queryParams),
-        this.stueckeRepository.count(queryParams)
+        this.stueckeRepository.count(queryParams),
       ]);
 
       const { page = 1, limit = 10 } = queryParams || {};
       const lastPage = Math.ceil(total / limit);
 
       const formattedData: FormattedStuecke[] = stuecke.map((item) =>
-        this.formatStuecke(item as any)
+        this.formatStuecke(item as any),
       );
 
       return {
@@ -371,97 +368,16 @@ export default class StueckeService {
           lastPage,
           limit,
           filters: this.extractFilters(queryParams),
-          sorting: this.extractSorting(queryParams)
-        }
+          sorting: this.extractSorting(queryParams),
+        },
       };
     } catch (error) {
       this.logger.error(
         `Error retrieving Stücke list: ${error instanceof Error ? error.message : "Unknown error"}`,
-        error instanceof Error ? error.stack : undefined
+        error instanceof Error ? error.stack : undefined,
       );
       throw error;
     }
-  }
-
-  /**
-   * Validates the page parameter to ensure it's a positive integer
-   */
-  private validatePageParam(page?: number): number {
-    if (page === undefined) return 1;
-    const parsedPage = Number(page);
-    if (isNaN(parsedPage) || parsedPage < 1) {
-      throw new BadRequestException("Page must be a positive integer");
-    }
-    return parsedPage;
-  }
-
-  /**
-   * Validates the limit parameter to ensure it's within acceptable range
-   */
-  private validateLimitParam(limit?: number): number {
-    if (limit === undefined) return 10;
-    const parsedLimit = Number(limit);
-    if (isNaN(parsedLimit) || parsedLimit < 1 || parsedLimit > 100) {
-      throw new BadRequestException("Limit must be between 1 and 100");
-    }
-    return parsedLimit;
-  }
-
-  /**
-   * Builds the where clause for database queries based on filters
-   */
-  private buildWhereClause(filters: FilterParams): Prisma.stueckeWhereInput {
-    const where: Prisma.stueckeWhereInput = {};
-
-    if (filters.name) {
-      where.name = { contains: filters.name, mode: "insensitive" };
-    }
-
-    if (filters.genre) {
-      where.genre = { equals: filters.genre };
-    }
-
-    if (filters.isdigitalisiert !== undefined) {
-      where.isdigitalisiert = { equals: filters.isdigitalisiert };
-    }
-
-    if (filters.composerName) {
-      where.komponiert = {
-        some: {
-          person: {
-            OR: [
-              { name: { contains: filters.composerName, mode: "insensitive" } },
-              {
-                vorname: {
-                  contains: filters.composerName,
-                  mode: "insensitive",
-                },
-              },
-            ],
-          },
-        },
-      };
-    }
-
-    if (filters.arrangerName) {
-      where.arrangiert = {
-        some: {
-          person: {
-            OR: [
-              { name: { contains: filters.arrangerName, mode: "insensitive" } },
-              {
-                vorname: {
-                  contains: filters.arrangerName,
-                  mode: "insensitive",
-                },
-              },
-            ],
-          },
-        },
-      };
-    }
-
-    return where;
   }
 
   /**
@@ -495,32 +411,6 @@ export default class StueckeService {
   }
 
   /**
-   * Builds the orderBy clause for database queries based on sorting parameters
-   */
-  private buildOrderByClause(
-    sorting: SortParams,
-  ): Prisma.stueckeOrderByWithRelationInput {
-    if (!sorting.sortBy) {
-      return { name: "asc" };
-    }
-
-    const direction = sorting.sortOrder === "desc" ? "desc" : "asc";
-
-    switch (sorting.sortBy) {
-      case "name":
-        return { name: direction };
-      case "genre":
-        return { genre: direction };
-      case "jahr":
-        return { jahr: direction };
-      case "schwierigkeit":
-        return { schwierigkeit: direction };
-      default:
-        return { name: "asc" };
-    }
-  }
-
-  /**
    * Formats a Stück entity with its relations for API response
    */
   private formatStuecke(stuecke: StueckeWithRelations): FormattedStuecke {
@@ -548,11 +438,13 @@ export default class StueckeService {
 
   private extractFilters(queryParams?: QueryParams) {
     if (!queryParams) return undefined;
-    const { name, genre, isdigitalisiert, composerName, arrangerName } = queryParams;
+    const { name, genre, isdigitalisiert, composerName, arrangerName } =
+      queryParams;
     const filters: any = {};
     if (name) filters.name = name;
     if (genre) filters.genre = genre;
-    if (isdigitalisiert !== undefined) filters.isdigitalisiert = isdigitalisiert;
+    if (isdigitalisiert !== undefined)
+      filters.isdigitalisiert = isdigitalisiert;
     if (composerName) filters.composerName = composerName;
     if (arrangerName) filters.arrangerName = arrangerName;
     return Object.keys(filters).length > 0 ? filters : undefined;
@@ -562,6 +454,6 @@ export default class StueckeService {
     if (!queryParams) return undefined;
     const { sortBy, sortOrder } = queryParams;
     if (!sortBy) return undefined;
-    return { sortBy, sortOrder: sortOrder || 'asc' };
+    return { sortBy, sortOrder: sortOrder || "asc" };
   }
 }

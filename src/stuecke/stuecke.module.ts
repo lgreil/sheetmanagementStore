@@ -1,8 +1,9 @@
-import { Module } from '@nestjs/common';
-import StueckeService from './stuecke.service';
-import { StueckeController } from './stuecke.controller';
-import { PrismaModule } from '../prisma/prisma.module';
-import { CacheModule } from '@nestjs/cache-manager';
+import { Module } from "@nestjs/common";
+import StueckeService from "./stuecke.service";
+import { StueckeController } from "./stuecke.controller";
+import { PrismaModule } from "../prisma/prisma.module";
+import { CacheModule } from "@nestjs/cache-manager";
+import { StueckeRepository } from "src/repositories/stuecke.repository";
 
 @Module({
   imports: [
@@ -12,7 +13,7 @@ import { CacheModule } from '@nestjs/cache-manager';
     }),
   ],
   controllers: [StueckeController],
-  providers: [StueckeService],
+  providers: [StueckeService, StueckeRepository],
   exports: [StueckeService],
 })
 export class StueckeModule {}
