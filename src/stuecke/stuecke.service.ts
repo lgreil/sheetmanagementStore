@@ -1,93 +1,24 @@
+import { CACHE_MANAGER } from "@nestjs/cache-manager";
 import {
+  Inject,
   Injectable,
+  Logger,
   NotFoundException,
   UseInterceptors,
-  Inject,
-  BadRequestException,
-  Logger,
 } from "@nestjs/common";
-import { PrismaService } from "../prisma/prisma.service";
-import { CreateStueckeDto } from "./dto/create-stuecke.dto";
-import { UpdateStueckeDto } from "./dto/update-stuecke.dto";
-import { ConvertIdNameInterceptor } from "src/interceptors/convert-id-name.interceptor";
-import { CACHE_MANAGER } from "@nestjs/cache-manager";
+import { stuecke } from "@prisma/client";
 import { Cache } from "cache-manager";
-import { Prisma, stuecke } from "@prisma/client";
+import { ConvertIdNameInterceptor } from "src/interceptors/convert-id-name.interceptor";
+import { PrismaService } from "../prisma/prisma.service";
 import { StueckeRepository } from "../repositories/stuecke.repository";
+import { CreateStueckeDto } from "./dto/create-stuecke.dto";
+import { FilterParamsDto } from "./dto/filter.dto";
+import { PaginationDto } from "./dto/pagination.dto";
+import { SortParamsDto } from "./dto/sorting.dto";
+import { UpdateStueckeDto } from "./dto/update-stuecke.dto";
+import { Stueck, FormattedStueck, StueckWithRelations } from "./dto/stueck.dto";
 
-// Define types for better type safety
-export interface FilterParams {
-  name?: string;
-  genre?: string;
-  isdigitalisiert?: boolean;
-  composerName?: string;
-  arrangerName?: string;
-}
-
-export interface SortParams {
-  sortBy?: "name" | "genre" | "jahr" | "schwierigkeit";
-  sortOrder?: "asc" | "desc";
-}
-
-export interface PaginationParams {
-  page?: number;
-  limit?: number;
-}
-
-export interface QueryParams
-  extends PaginationParams,
-    FilterParams,
-    SortParams {}
-
-export interface PaginatedResponse<T> {
-  data: T[];
-  meta: {
-    total: number;
-    page: number;
-    lastPage: number;
-    limit: number;
-    filters?: FilterParams;
-    sorting?: SortParams;
-  };
-}
-
-// Define type for formatted Stücke
-export interface FormattedStuecke {
-  stid: number;
-  name: string;
-  genre?: string | null;
-  jahr?: number | null;
-  schwierigkeit?: string | null;
-  isdigitalisiert?: boolean | null;
-  arrangiert: {
-    pid: number;
-    vorname: string | null;
-    name: string | null;
-  }[];
-  komponiert: {
-    pid: number;
-    vorname: string | null;
-    name: string | null;
-  }[];
-}
-
-// Define type for Stücke with relations
-export interface StueckeWithRelations extends stuecke {
-  arrangiert?: {
-    person: {
-      pid: number;
-      name: string | null;
-      vorname: string | null;
-    };
-  }[];
-  komponiert?: {
-    person: {
-      pid: number;
-      name: string | null;
-      vorname: string | null;
-    };
-  }[];
-}
+export type QueryParams = PaginationDto & FilterParamsDto & SortParamsDto;
 
 @Injectable()
 export default class StueckeService {
@@ -124,7 +55,7 @@ export default class StueckeService {
 
   async create(
     createStueckeDto: CreateStueckeDto,
-  ): Promise<StueckeWithRelations> {
+  ): Promise<StueckWithRelations> {
     try {
       // Using transaction to ensure all related operations succeed or fail together
       const stuecke = await this.prisma.$transaction(async (tx) => {
@@ -165,7 +96,7 @@ export default class StueckeService {
   }
 
   @UseInterceptors(ConvertIdNameInterceptor)
-  async findOne(id: number): Promise<FormattedStuecke> {
+  async findOne(id: number): Promise<FormattedStueck> {
     try {
       const cacheKey = this.getCacheKey(id);
       const cached = this.getCache(cacheKey);
@@ -226,7 +157,7 @@ export default class StueckeService {
   async update(
     id: number,
     updateStueckeDto: UpdateStueckeDto,
-  ): Promise<FormattedStuecke> {
+  ): Promise<FormattedStueck> {
     try {
       const { composerIds, arrangerIds, ...data } = updateStueckeDto;
 
@@ -311,7 +242,7 @@ export default class StueckeService {
       throw error;
     }
   }
-  async remove(id: number): Promise<stuecke> {
+  async remove(id: number): Promise<Stueck> {
     try {
       // Using transaction to ensure all related operations succeed or fail together
       const result = await this.prisma.$transaction(async (tx) => {
@@ -344,19 +275,21 @@ export default class StueckeService {
   }
 
   @UseInterceptors(ConvertIdNameInterceptor)
+  @UseInterceptors(ConvertIdNameInterceptor)
   async findAll(
     queryParams?: QueryParams,
-  ): Promise<PaginatedResponse<FormattedStuecke>> {
+  ): Promise<{ data: FormattedStueck[]; meta: any }> {
     try {
       const [stuecke, total] = await Promise.all([
         this.stueckeRepository.findAll(queryParams),
         this.stueckeRepository.count(queryParams),
       ]);
 
-      const { page = 1, limit = 10 } = queryParams || {};
+      const page = queryParams?.page || 1;
+      const limit = queryParams?.limit || 10;
       const lastPage = Math.ceil(total / limit);
 
-      const formattedData: FormattedStuecke[] = stuecke.map((item) =>
+      const formattedData: FormattedStueck[] = stuecke.map((item) =>
         this.formatStuecke(item as any),
       );
 
@@ -413,7 +346,7 @@ export default class StueckeService {
   /**
    * Formats a Stück entity with its relations for API response
    */
-  private formatStuecke(stuecke: StueckeWithRelations): FormattedStuecke {
+  private formatStuecke(stuecke: StueckWithRelations): FormattedStueck {
     return {
       stid: stuecke.stid,
       name: stuecke.name,
