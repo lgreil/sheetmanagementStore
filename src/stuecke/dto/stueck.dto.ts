@@ -5,8 +5,8 @@ export class FormattedStueck {
   jahr: number;
   schwierigkeit: string;
   isdigitalisiert: boolean;
-  komponisten?: { pid: number; name: string; vorname: string }[];
-  arrangeure?: { pid: number; name: string; vorname: string }[];
+  komponiert?: { pid: number; name: string; vorname: string }[];
+  arrangiert?: { pid: number; name: string; vorname: string }[];
 }
 
 export class StueckWithRelations {

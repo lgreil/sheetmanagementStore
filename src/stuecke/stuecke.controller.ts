@@ -20,6 +20,7 @@ import {
   ApiQuery,
 } from "@nestjs/swagger";
 import { ConvertIdNameInterceptor } from "src/interceptors/convert-id-name.interceptor";
+import { FilterParamsDto, PaginationDto, SortParamsDto } from "./dto/query.dto";
 
 @ApiTags("stuecke")
 @Controller("stuecke")
@@ -35,10 +36,10 @@ export class StueckeController {
       properties: {
         stid: { type: "number" },
         name: { type: "string" },
-        genre: { type: "string", nullable: true },
-        jahr: { type: "number", nullable: true },
-        schwierigkeit: { type: "string", nullable: true },
-        isdigitalisiert: { type: "boolean", nullable: true },
+        genre: { type: "string" },
+        jahr: { type: "number" },
+        schwierigkeit: { type: "string" },
+        isdigitalisiert: { type: "boolean" },
         arrangiert: {
           type: "array",
           items: {
@@ -48,8 +49,8 @@ export class StueckeController {
                 type: "object",
                 properties: {
                   pid: { type: "number" },
-                  name: { type: "string", nullable: true },
-                  vorname: { type: "string", nullable: true },
+                  name: { type: "string" },
+                  vorname: { type: "string" },
                 },
               },
             },
@@ -64,8 +65,8 @@ export class StueckeController {
                 type: "object",
                 properties: {
                   pid: { type: "number" },
-                  name: { type: "string", nullable: true },
-                  vorname: { type: "string", nullable: true },
+                  name: { type: "string" },
+                  vorname: { type: "string" },
                 },
               },
             },
@@ -158,18 +159,18 @@ export class StueckeController {
             properties: {
               stid: { type: "number" },
               name: { type: "string" },
-              genre: { type: "string", nullable: true },
-              jahr: { type: "number", nullable: true },
-              schwierigkeit: { type: "string", nullable: true },
-              isdigitalisiert: { type: "boolean", nullable: true },
+              genre: { type: "string" },
+              jahr: { type: "number" },
+              schwierigkeit: { type: "string" },
+              isdigitalisiert: { type: "boolean" },
               arrangiert: {
                 type: "array",
                 items: {
                   type: "object",
                   properties: {
                     pid: { type: "number" },
-                    vorname: { type: "string", nullable: true },
-                    name: { type: "string", nullable: true },
+                    vorname: { type: "string" },
+                    name: { type: "string" },
                   },
                 },
               },
@@ -179,8 +180,8 @@ export class StueckeController {
                   type: "object",
                   properties: {
                     pid: { type: "number" },
-                    vorname: { type: "string", nullable: true },
-                    name: { type: "string", nullable: true },
+                    vorname: { type: "string" },
+                    name: { type: "string" },
                   },
                 },
               },
@@ -248,18 +249,18 @@ export class StueckeController {
       properties: {
         stid: { type: "number" },
         name: { type: "string" },
-        genre: { type: "string", nullable: true },
-        jahr: { type: "number", nullable: true },
-        schwierigkeit: { type: "string", nullable: true },
-        isdigitalisiert: { type: "boolean", nullable: true },
+        genre: { type: "string" },
+        jahr: { type: "number" },
+        schwierigkeit: { type: "string" },
+        isdigitalisiert: { type: "boolean" },
         arrangiert: {
           type: "array",
           items: {
             type: "object",
             properties: {
               pid: { type: "number" },
-              vorname: { type: "string", nullable: true },
-              name: { type: "string", nullable: true },
+              vorname: { type: "string" },
+              name: { type: "string" },
             },
           },
         },
@@ -269,8 +270,8 @@ export class StueckeController {
             type: "object",
             properties: {
               pid: { type: "number" },
-              vorname: { type: "string", nullable: true },
-              name: { type: "string", nullable: true },
+              vorname: { type: "string" },
+              name: { type: "string" },
             },
           },
         },
@@ -299,18 +300,18 @@ export class StueckeController {
       properties: {
         stid: { type: "number" },
         name: { type: "string" },
-        genre: { type: "string", nullable: true },
-        jahr: { type: "number", nullable: true },
-        schwierigkeit: { type: "string", nullable: true },
-        isdigitalisiert: { type: "boolean", nullable: true },
+        genre: { type: "string" },
+        jahr: { type: "number" },
+        schwierigkeit: { type: "string" },
+        isdigitalisiert: { type: "boolean" },
         arrangiert: {
           type: "array",
           items: {
             type: "object",
             properties: {
               pid: { type: "number" },
-              vorname: { type: "string", nullable: true },
-              name: { type: "string", nullable: true },
+              vorname: { type: "string" },
+              name: { type: "string" },
             },
           },
         },
@@ -320,8 +321,8 @@ export class StueckeController {
             type: "object",
             properties: {
               pid: { type: "number" },
-              vorname: { type: "string", nullable: true },
-              name: { type: "string", nullable: true },
+              vorname: { type: "string" },
+              name: { type: "string" },
             },
           },
         },
@@ -353,10 +354,10 @@ export class StueckeController {
       properties: {
         stid: { type: "number" },
         name: { type: "string" },
-        genre: { type: "string", nullable: true },
-        jahr: { type: "number", nullable: true },
-        schwierigkeit: { type: "string", nullable: true },
-        isdigitalisiert: { type: "boolean", nullable: true },
+        genre: { type: "string" },
+        jahr: { type: "number" },
+        schwierigkeit: { type: "string" },
+        isdigitalisiert: { type: "boolean" },
       },
     },
   })

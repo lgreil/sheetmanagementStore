@@ -12,9 +12,7 @@ import { ConvertIdNameInterceptor } from "src/interceptors/convert-id-name.inter
 import { PrismaService } from "../prisma/prisma.service";
 import { StueckeRepository } from "../repositories/stuecke.repository";
 import { CreateStueckeDto } from "./dto/create-stuecke.dto";
-import { FilterParamsDto } from "./dto/filter.dto";
-import { PaginationDto } from "./dto/pagination.dto";
-import { SortParamsDto } from "./dto/sorting.dto";
+import { FilterParamsDto, PaginationDto, SortParamsDto } from "./dto/query.dto";
 import { UpdateStueckeDto } from "./dto/update-stuecke.dto";
 import { Stueck, FormattedStueck, StueckWithRelations } from "./dto/stueck.dto";
 
@@ -62,8 +60,10 @@ export default class StueckeService {
         return await tx.stuecke.create({
           data: {
             name: createStueckeDto.name,
-            genre: createStueckeDto.genre,
+            genre: createStueckeDto.genre || "", // Ensure genre is never null
             isdigitalisiert: createStueckeDto.isdigitalisiert,
+            jahr: createStueckeDto.jahr ?? 0, // Use 0 instead of null to match StueckWithRelations type
+            schwierigkeit: createStueckeDto.schwierigkeit || "", // Use empty string instead of null
             arrangiert: {
               create:
                 createStueckeDto.arrangerIds?.map((pid) => ({
@@ -85,7 +85,8 @@ export default class StueckeService {
         });
       });
 
-      return stuecke;
+      // Cast to ensure TypeScript recognizes the return type correctly
+      return stuecke as StueckWithRelations;
     } catch (error) {
       this.logger.error(
         `Failed to create Stück: ${error instanceof Error ? error.message : "Unknown error"}`,
